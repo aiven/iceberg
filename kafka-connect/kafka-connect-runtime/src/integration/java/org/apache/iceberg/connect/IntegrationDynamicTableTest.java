@@ -97,6 +97,7 @@ public class IntegrationDynamicTableTest extends IntegrationTestBase {
             .config("iceberg.tables.route-field", "payload")
             .config("iceberg.control.commit.interval-ms", 1000)
             .config("iceberg.control.commit.timeout-ms", Integer.MAX_VALUE)
+            .config("iceberg.kafka.bootstrap.servers", TestContext.CONTROL_TOPIC_BOOTSTRAP_SERVERS)
             .config("iceberg.kafka.auto.offset.reset", "earliest");
 
     context().connectorCatalogProperties().forEach(connectorConfig::config);
