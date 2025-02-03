@@ -101,6 +101,7 @@ public class IntegrationMultiTableTest extends IntegrationTestBase {
             .config(String.format("iceberg.table.%s.%s.route-regex", TEST_DB, TEST_TABLE2), "type2")
             .config("iceberg.control.commit.interval-ms", 1000)
             .config("iceberg.control.commit.timeout-ms", Integer.MAX_VALUE)
+            .config("iceberg.kafka.bootstrap.servers", TestContext.CONTROL_TOPIC_BOOTSTRAP_SERVERS)
             .config("iceberg.kafka.auto.offset.reset", "earliest");
 
     context().connectorCatalogProperties().forEach(connectorConfig::config);
