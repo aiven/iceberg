@@ -66,7 +66,7 @@ public class TestAssumeRoleAwsClientFactory {
 
   @BeforeEach
   public void before() {
-    roleName = UUID.randomUUID().toString();
+    roleName = "integrationtest-role-" + UUID.randomUUID().toString();
     iam =
         IamClient.builder()
             .region(Region.AWS_GLOBAL)
@@ -99,7 +99,7 @@ public class TestAssumeRoleAwsClientFactory {
     assumeRoleProperties.put(AwsProperties.CLIENT_ASSUME_ROLE_ARN, response.role().arn());
     assumeRoleProperties.put(AwsProperties.CLIENT_ASSUME_ROLE_TAGS_PREFIX + "key1", "value1");
     assumeRoleProperties.put(AwsProperties.CLIENT_ASSUME_ROLE_TAGS_PREFIX + "key2", "value2");
-    policyName = UUID.randomUUID().toString();
+    policyName = "integrationtest-policy-" + UUID.randomUUID().toString();
   }
 
   @AfterEach
