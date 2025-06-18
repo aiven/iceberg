@@ -43,6 +43,7 @@ import software.amazon.awssdk.services.dynamodb.DynamoDbClientBuilder;
 import software.amazon.awssdk.services.glue.GlueClientBuilder;
 import software.amazon.awssdk.services.kms.model.DataKeySpec;
 import software.amazon.awssdk.services.kms.model.EncryptionAlgorithmSpec;
+import software.amazon.awssdk.services.sts.StsClientBuilder;
 
 public class AwsProperties implements Serializable {
 
@@ -154,6 +155,14 @@ public class AwsProperties implements Serializable {
   public static final String CLIENT_ASSUME_ROLE_REGION = "client.assume-role.region";
 
   /**
+   * Used by {@link AssumeRoleAwsClientFactory}. Optional URL to use as the STS endpoint.
+   *
+   * <p>For more details, see
+   * https://docs.aws.amazon.com/STS/latest/APIReference/welcome.html#sts-endpoints
+   */
+  public static final String CLIENT_ASSUME_ROLE_STS_ENDPOINT = "client.sts.endpoint";
+
+  /**
    * Used by {@link AssumeRoleAwsClientFactory}. Optional session name used to assume an IAM role.
    *
    * <p>For more details, see
@@ -225,6 +234,7 @@ public class AwsProperties implements Serializable {
   private final String clientAssumeRoleExternalId;
   private final int clientAssumeRoleTimeoutSec;
   private final String clientAssumeRoleRegion;
+  private final String clientAssumeRoleStsEndpoint;
   private final String clientAssumeRoleSessionName;
   private final String clientCredentialsProvider;
   private final Map<String, String> clientCredentialsProviderProperties;
@@ -253,6 +263,7 @@ public class AwsProperties implements Serializable {
     this.clientAssumeRoleTimeoutSec = CLIENT_ASSUME_ROLE_TIMEOUT_SEC_DEFAULT;
     this.clientAssumeRoleExternalId = null;
     this.clientAssumeRoleRegion = null;
+    this.clientAssumeRoleStsEndpoint = null;
     this.clientAssumeRoleSessionName = null;
     this.clientCredentialsProvider = null;
     this.clientCredentialsProviderProperties = null;
@@ -281,6 +292,7 @@ public class AwsProperties implements Serializable {
             properties, CLIENT_ASSUME_ROLE_TIMEOUT_SEC, CLIENT_ASSUME_ROLE_TIMEOUT_SEC_DEFAULT);
     this.clientAssumeRoleExternalId = properties.get(CLIENT_ASSUME_ROLE_EXTERNAL_ID);
     this.clientAssumeRoleRegion = properties.get(CLIENT_ASSUME_ROLE_REGION);
+    this.clientAssumeRoleStsEndpoint = properties.get(CLIENT_ASSUME_ROLE_STS_ENDPOINT);
     this.clientAssumeRoleSessionName = properties.get(CLIENT_ASSUME_ROLE_SESSION_NAME);
     this.clientCredentialsProvider =
         properties.get(AwsClientProperties.CLIENT_CREDENTIALS_PROVIDER);
@@ -339,6 +351,10 @@ public class AwsProperties implements Serializable {
 
   public String clientAssumeRoleRegion() {
     return clientAssumeRoleRegion;
+  }
+
+  public String clientAssumeRoleStsEndpoint() {
+    return clientAssumeRoleStsEndpoint;
   }
 
   public String clientAssumeRoleSessionName() {
@@ -409,6 +425,19 @@ public class AwsProperties implements Serializable {
    */
   public <T extends DynamoDbClientBuilder> void applyDynamoDbEndpointConfigurations(T builder) {
     configureEndpoint(builder, dynamoDbEndpoint);
+  }
+
+  /**
+   * Override the endpoint for an STS client.
+   *
+   * <p>Sample usage:
+   *
+   * <pre>
+   *     StsClient.builder().applyMutation(awsProperties::applyStsEndpointConfigurations)
+   * </pre>
+   */
+  public <T extends StsClientBuilder> void applyStsEndpointConfigurations(T builder) {
+    configureEndpoint(builder, clientAssumeRoleStsEndpoint);
   }
 
   public Region restSigningRegion() {
