@@ -18,6 +18,7 @@
  */
 package org.apache.iceberg.aws;
 
+import java.net.URI;
 import java.util.Map;
 import java.util.UUID;
 import org.apache.iceberg.aws.s3.S3FileIOProperties;
@@ -136,6 +137,14 @@ public class AssumeRoleAwsClientFactory implements AwsClientFactory {
         .region(Region.of(awsProperties.clientAssumeRoleRegion()));
   }
 
+  protected URI stsEndpointOverride() {
+    if (awsProperties.clientAssumeRoleStsEndpoint() == null) {
+      return null;
+    } else {
+      return URI.create(awsProperties.clientAssumeRoleStsEndpoint());
+    }
+  }
+
   protected String region() {
     return awsProperties.clientAssumeRoleRegion();
   }
@@ -159,6 +168,7 @@ public class AssumeRoleAwsClientFactory implements AwsClientFactory {
   private StsClient sts() {
     return StsClient.builder()
         .applyMutation(httpClientProperties::applyHttpClientConfigurations)
+        .endpointOverride(stsEndpointOverride())
         .build();
   }
 
