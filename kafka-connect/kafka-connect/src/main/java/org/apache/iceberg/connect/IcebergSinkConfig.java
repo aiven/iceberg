@@ -90,6 +90,7 @@ public class IcebergSinkConfig extends AbstractConfig {
   private static final String TRANSACTIONAL_PREFIX_PROP =
       "iceberg.coordinator.transactional.prefix";
   private static final String HADOOP_CONF_DIR_PROP = "iceberg.hadoop-conf-dir";
+  private static final String INCLUDE_WORKER_PROPS = "iceberg.use-worker-properties";
 
   private static final String NAME_PROP = "name";
   private static final String BOOTSTRAP_SERVERS_PROP = "bootstrap.servers";
@@ -225,6 +226,13 @@ public class IcebergSinkConfig extends AbstractConfig {
         null,
         Importance.MEDIUM,
         "If specified, Hadoop config files in this directory will be loaded");
+    configDef.define(
+            INCLUDE_WORKER_PROPS,
+            ConfigDef.Type.BOOLEAN,
+            Boolean.FALSE,
+            Importance.MEDIUM,
+            "If true, the worker properties will be included in the task properties");
+    )
     return configDef;
   }
 
@@ -244,7 +252,10 @@ public class IcebergSinkConfig extends AbstractConfig {
     this.catalogProps = PropertyUtil.propertiesWithPrefix(originalProps, CATALOG_PROP_PREFIX);
     this.hadoopProps = PropertyUtil.propertiesWithPrefix(originalProps, HADOOP_PROP_PREFIX);
 
-    this.kafkaProps = Maps.newHashMap(loadWorkerProps());
+    this.kafkaProps = Maps.newHashMap();
+    if (this.getBoolean(INCLUDE_WORKER_PROPS)) {
+      this.kafkaProps.putAll(loadWorkerProps());
+    }
     kafkaProps.putAll(PropertyUtil.propertiesWithPrefix(originalProps, KAFKA_PROP_PREFIX));
 
     this.autoCreateProps =
