@@ -227,12 +227,11 @@ public class IcebergSinkConfig extends AbstractConfig {
         Importance.MEDIUM,
         "If specified, Hadoop config files in this directory will be loaded");
     configDef.define(
-            INCLUDE_WORKER_PROPS,
-            ConfigDef.Type.BOOLEAN,
-            Boolean.FALSE,
-            Importance.MEDIUM,
-            "If true, the worker properties will be included in the task properties");
-    )
+        INCLUDE_WORKER_PROPS,
+        ConfigDef.Type.BOOLEAN,
+        Boolean.FALSE,
+        Importance.MEDIUM,
+        "If true, the worker properties will be included in the task properties");
     return configDef;
   }
 
