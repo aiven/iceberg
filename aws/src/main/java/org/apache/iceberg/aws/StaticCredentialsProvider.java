@@ -33,7 +33,7 @@ import software.amazon.awssdk.utils.Validate;
  *
  * <p>This code was copied from the original to add the create() factory method required by Iceberg.
  *
- * @link <a
+ * @see <a
  *     href="https://github.com/aws/aws-sdk-java-v2/blob/master/core/auth/src/main/java/software/amazon/awssdk/auth/credentials/StaticCredentialsProvider.java">StaticCredentialsProvider.java</a>
  */
 @SdkPublicApi
