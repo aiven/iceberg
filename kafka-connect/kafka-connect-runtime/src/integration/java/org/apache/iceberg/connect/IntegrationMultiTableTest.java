@@ -25,10 +25,12 @@ import java.util.List;
 import org.apache.iceberg.DataFile;
 import org.apache.iceberg.catalog.TableIdentifier;
 import org.apache.iceberg.relocated.com.google.common.collect.ImmutableMap;
+import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.NullSource;
 import org.junit.jupiter.params.provider.ValueSource;
 
+@Disabled("Container does not work")
 public class IntegrationMultiTableTest extends IntegrationTestBase {
 
   private static final String TEST_TABLE1 = "foobar1";
