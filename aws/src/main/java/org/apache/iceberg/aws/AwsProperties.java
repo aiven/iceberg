@@ -41,6 +41,7 @@ import software.amazon.awssdk.regions.Region;
 import software.amazon.awssdk.regions.providers.DefaultAwsRegionProviderChain;
 import software.amazon.awssdk.services.dynamodb.DynamoDbClientBuilder;
 import software.amazon.awssdk.services.glue.GlueClientBuilder;
+import software.amazon.awssdk.services.sts.StsClientBuilder;
 
 public class AwsProperties implements Serializable {
 
@@ -326,10 +327,6 @@ public class AwsProperties implements Serializable {
     return clientAssumeRoleRegion;
   }
 
-  public String clientAssumeRoleStsEndpoint() {
-    return clientAssumeRoleStsEndpoint;
-  }
-
   public String clientAssumeRoleSessionName() {
     return clientAssumeRoleSessionName;
   }
@@ -398,6 +395,19 @@ public class AwsProperties implements Serializable {
    */
   public <T extends DynamoDbClientBuilder> void applyDynamoDbEndpointConfigurations(T builder) {
     configureEndpoint(builder, dynamoDbEndpoint);
+  }
+
+  /**
+   * Override the endpoint for an STS client.
+   *
+   * <p>Sample usage:
+   *
+   * <pre>
+   *     StsClient.builder().applyMutation(awsProperties::applyStsEndpointConfigurations)
+   * </pre>
+   */
+  public <T extends StsClientBuilder> void applyStsEndpointConfigurations(T builder) {
+    configureEndpoint(builder, clientAssumeRoleStsEndpoint);
   }
 
   public Region restSigningRegion() {
