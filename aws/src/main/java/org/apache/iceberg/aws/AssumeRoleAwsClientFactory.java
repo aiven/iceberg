@@ -160,6 +160,7 @@ public class AssumeRoleAwsClientFactory implements AwsClientFactory {
     return StsClient.builder()
         .applyMutation(httpClientProperties::applyHttpClientConfigurations)
         .applyMutation(awsClientProperties::applyClientRegionConfiguration)
+        .applyMutation(awsProperties::applyStsEndpointConfigurations)
         .build();
   }
 
