@@ -20,8 +20,10 @@ package org.apache.iceberg.gcp;
 
 import java.io.Serializable;
 import java.util.Date;
+import java.util.List;
 import java.util.Map;
 import java.util.Optional;
+import java.util.stream.Collectors;
 import org.apache.iceberg.CatalogProperties;
 import org.apache.iceberg.relocated.com.google.common.base.Preconditions;
 import org.apache.iceberg.relocated.com.google.common.collect.ImmutableMap;
@@ -41,6 +43,9 @@ public class GCPProperties implements Serializable {
 
   public static final String GCS_CHANNEL_READ_CHUNK_SIZE = "gcs.channel.read.chunk-size-bytes";
   public static final String GCS_CHANNEL_WRITE_CHUNK_SIZE = "gcs.channel.write.chunk-size-bytes";
+
+  public static final String GCP_CREDENTIALS_PATH_PROPERTY = "gcp.auth.credentials-path";
+  public static final String GCP_CREDENTIALS_JSON_PROPERTY = "gcp.auth.credentials-json";
 
   public static final String GCS_OAUTH2_TOKEN = "gcs.oauth2.token";
   public static final String GCS_OAUTH2_TOKEN_EXPIRES_AT = "gcs.oauth2.token-expires-at";
@@ -80,6 +85,8 @@ public class GCPProperties implements Serializable {
   private Date gcsOAuth2TokenExpiresAt;
   private String gcsOauth2RefreshCredentialsEndpoint;
   private boolean gcsOauth2RefreshCredentialsEnabled;
+  private String gcsCredentialsPath;
+  private String gcsCredentialsJson;
 
   private int gcsDeleteBatchSize = GCS_DELETE_BATCH_SIZE_DEFAULT;
 
@@ -111,19 +118,39 @@ public class GCPProperties implements Serializable {
       gcsOAuth2TokenExpiresAt =
           new Date(Long.parseLong(properties.get(GCS_OAUTH2_TOKEN_EXPIRES_AT)));
     }
-
     gcsOauth2RefreshCredentialsEndpoint =
         RESTUtil.resolveEndpoint(
             properties.get(CatalogProperties.URI),
             properties.get(GCS_OAUTH2_REFRESH_CREDENTIALS_ENDPOINT));
     gcsOauth2RefreshCredentialsEnabled =
         PropertyUtil.propertyAsBoolean(properties, GCS_OAUTH2_REFRESH_CREDENTIALS_ENABLED, true);
+
     gcsNoAuth = Boolean.parseBoolean(properties.getOrDefault(GCS_NO_AUTH, "false"));
+
+    gcsCredentialsPath = properties.get(GCP_CREDENTIALS_PATH_PROPERTY);
+    gcsCredentialsJson = properties.get(GCP_CREDENTIALS_JSON_PROPERTY);
+
+    // Get the list of authentication properties that were specified.  Only one should be present.
+    List<String> authKeysPresent =
+        Map.of(
+                GCS_NO_AUTH,
+                gcsNoAuth,
+                GCS_OAUTH2_TOKEN,
+                gcsOAuth2Token != null,
+                GCP_CREDENTIALS_PATH_PROPERTY,
+                gcsCredentialsPath != null,
+                GCP_CREDENTIALS_JSON_PROPERTY,
+                gcsCredentialsJson != null)
+            .entrySet()
+            .stream()
+            .filter(Map.Entry::getValue)
+            .map(Map.Entry::getKey)
+            .sorted(String.CASE_INSENSITIVE_ORDER)
+            .collect(Collectors.toList());
     Preconditions.checkState(
-        !(gcsOAuth2Token != null && gcsNoAuth),
-        "Invalid auth settings: must not configure %s and %s",
-        GCS_NO_AUTH,
-        GCS_OAUTH2_TOKEN);
+        authKeysPresent.size() < 2,
+        "Invalid auth settings: must not configure %s",
+        String.join(", ", authKeysPresent));
 
     gcsDeleteBatchSize =
         PropertyUtil.propertyAsInt(
@@ -168,6 +195,14 @@ public class GCPProperties implements Serializable {
 
   public boolean noAuth() {
     return gcsNoAuth;
+  }
+
+  public Optional<String> credentialsPath() {
+    return Optional.ofNullable(gcsCredentialsPath);
+  }
+
+  public Optional<String> credentialsJson() {
+    return Optional.ofNullable(gcsCredentialsJson);
   }
 
   public Optional<Date> oauth2TokenExpiresAt() {
