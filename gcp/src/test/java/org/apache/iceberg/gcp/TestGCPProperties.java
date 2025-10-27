@@ -18,6 +18,8 @@
  */
 package org.apache.iceberg.gcp;
 
+import static org.apache.iceberg.gcp.GCPProperties.GCS_CREDENTIALS_JSON;
+import static org.apache.iceberg.gcp.GCPProperties.GCS_CREDENTIALS_PATH;
 import static org.apache.iceberg.gcp.GCPProperties.GCS_NO_AUTH;
 import static org.apache.iceberg.gcp.GCPProperties.GCS_OAUTH2_REFRESH_CREDENTIALS_ENABLED;
 import static org.apache.iceberg.gcp.GCPProperties.GCS_OAUTH2_REFRESH_CREDENTIALS_ENDPOINT;
@@ -31,16 +33,34 @@ import org.junit.jupiter.api.Test;
 public class TestGCPProperties {
 
   @Test
-  public void testOAuthWithNoAuth() {
+  public void testIncompatibleAuth() {
     assertThatIllegalStateException()
         .isThrownBy(
             () ->
                 new GCPProperties(ImmutableMap.of(GCS_OAUTH2_TOKEN, "oauth", GCS_NO_AUTH, "true")))
         .withMessage(
             String.format(
-                "Invalid auth settings: must not configure %s and %s",
-                GCS_NO_AUTH, GCS_OAUTH2_TOKEN));
+                "Invalid auth settings: must not configure %s, %s", GCS_NO_AUTH, GCS_OAUTH2_TOKEN));
 
+    assertThatIllegalStateException()
+        .isThrownBy(
+            () ->
+                new GCPProperties(
+                    ImmutableMap.of(
+                        GCS_OAUTH2_TOKEN,
+                        "oauth",
+                        GCS_CREDENTIALS_PATH,
+                        "/path",
+                        GCS_CREDENTIALS_JSON,
+                        "{}")))
+        .withMessage(
+            String.format(
+                "Invalid auth settings: must not configure %s, %s, %s",
+                GCS_CREDENTIALS_JSON, GCS_CREDENTIALS_PATH, GCS_OAUTH2_TOKEN));
+  }
+
+  @Test
+  public void testOAuthWithNoAuth() {
     GCPProperties gcpProperties =
         new GCPProperties(ImmutableMap.of(GCS_OAUTH2_TOKEN, "oauth", GCS_NO_AUTH, "false"));
     assertThat(gcpProperties.noAuth()).isFalse();

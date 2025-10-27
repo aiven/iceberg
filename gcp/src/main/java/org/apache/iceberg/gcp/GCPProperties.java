@@ -54,6 +54,12 @@ public class GCPProperties implements Serializable {
   public static final String GCS_OAUTH2_REFRESH_CREDENTIALS_ENDPOINT =
       "gcs.oauth2.refresh-credentials-endpoint";
 
+  // Path to service account credentials, or the embedded JSON content. Used to authenticate for
+  // Google Cloud Storage, much like gcp.auth.credentials-path configures REST catalog session
+  // authentication via GoogleAuthManager.
+  public static final String GCS_CREDENTIALS_PATH = "gcs.credentials-path";
+  public static final String GCS_CREDENTIALS_JSON = "gcs.credentials-json";
+
   // Impersonation properties
   public static final String GCS_IMPERSONATE_SERVICE_ACCOUNT = "gcs.impersonate.service-account";
   public static final String GCS_IMPERSONATE_LIFETIME_SECONDS = "gcs.impersonate.lifetime-seconds";
@@ -103,6 +109,9 @@ public class GCPProperties implements Serializable {
   private int gcsImpersonateLifetimeSeconds;
   private List<String> gcsImpersonateDelegates;
   private List<String> gcsImpersonateScopes;
+
+  private String gcsCredentialsPath;
+  private String gcsCredentialsJson;
 
   private int gcsDeleteBatchSize = GCS_DELETE_BATCH_SIZE_DEFAULT;
 
@@ -174,11 +183,31 @@ public class GCPProperties implements Serializable {
     gcsOauth2RefreshCredentialsEnabled =
         PropertyUtil.propertyAsBoolean(properties, GCS_OAUTH2_REFRESH_CREDENTIALS_ENABLED, true);
     gcsNoAuth = Boolean.parseBoolean(properties.getOrDefault(GCS_NO_AUTH, "false"));
+
+    gcsCredentialsPath = properties.get(GCS_CREDENTIALS_PATH);
+    gcsCredentialsJson = properties.get(GCS_CREDENTIALS_JSON);
+
+    // Get the list of authentication properties that were specified.  Only one should be present.
+    List<String> authKeysPresent =
+        Map.of(
+                GCS_NO_AUTH,
+                gcsNoAuth,
+                GCS_OAUTH2_TOKEN,
+                gcsOAuth2Token != null,
+                GCS_CREDENTIALS_PATH,
+                gcsCredentialsPath != null,
+                GCS_CREDENTIALS_JSON,
+                gcsCredentialsJson != null)
+            .entrySet()
+            .stream()
+            .filter(Map.Entry::getValue)
+            .map(Map.Entry::getKey)
+            .sorted(String.CASE_INSENSITIVE_ORDER)
+            .collect(Collectors.toList());
     Preconditions.checkState(
-        !(gcsOAuth2Token != null && gcsNoAuth),
-        "Invalid auth settings: must not configure %s and %s",
-        GCS_NO_AUTH,
-        GCS_OAUTH2_TOKEN);
+        authKeysPresent.size() < 2,
+        "Invalid auth settings: must not configure %s",
+        String.join(", ", authKeysPresent));
 
     gcsDeleteBatchSize =
         PropertyUtil.propertyAsInt(
@@ -237,6 +266,14 @@ public class GCPProperties implements Serializable {
 
   public boolean noAuth() {
     return gcsNoAuth;
+  }
+
+  public Optional<String> credentialsPath() {
+    return Optional.ofNullable(gcsCredentialsPath);
+  }
+
+  public Optional<String> credentialsJson() {
+    return Optional.ofNullable(gcsCredentialsJson);
   }
 
   public Optional<Date> oauth2TokenExpiresAt() {

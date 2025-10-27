@@ -19,14 +19,18 @@
 package org.apache.iceberg.gcp.gcs;
 
 import com.google.api.gax.rpc.FixedHeaderProvider;
+import com.google.api.services.storage.StorageScopes;
 import com.google.auth.Credentials;
 import com.google.auth.oauth2.GoogleCredentials;
 import com.google.auth.oauth2.ImpersonatedCredentials;
 import com.google.cloud.NoCredentials;
 import com.google.cloud.storage.Storage;
 import com.google.cloud.storage.StorageOptions;
+import java.io.ByteArrayInputStream;
+import java.io.FileInputStream;
 import java.io.IOException;
 import java.io.UncheckedIOException;
+import java.nio.charset.StandardCharsets;
 import java.util.Map;
 import org.apache.iceberg.EnvironmentContext;
 import org.apache.iceberg.gcp.GCPAuthUtils;
@@ -36,8 +40,11 @@ import org.apache.iceberg.relocated.com.google.common.base.Preconditions;
 import org.apache.iceberg.relocated.com.google.common.base.Strings;
 import org.apache.iceberg.relocated.com.google.common.collect.ImmutableMap;
 import org.apache.iceberg.util.SerializableSupplier;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 class PrefixedStorage implements AutoCloseable {
+  private static final Logger LOG = LoggerFactory.getLogger(PrefixedStorage.class);
   private static final String GCS_FILE_IO_USER_AGENT = "gcsfileio/" + EnvironmentContext.get();
   private final String storagePrefix;
   private final GCPProperties gcpProperties;
@@ -152,10 +159,34 @@ class PrefixedStorage implements AutoCloseable {
     // in most cases the convenient way, especially in GCP.
     // See javadoc of com.google.auth.oauth2.GoogleCredentials.getApplicationDefault()
     if (properties.oauth2Token().isPresent()) {
+      LOG.info("Using OAuth2 token from configuration for prefix {}", storagePrefix);
       return GCPAuthUtils.oauth2CredentialsFromGcpProperties(properties, closeableGroup);
     } else if (properties.noAuth()) {
       // Explicitly allow "no credentials" for testing purposes
+      LOG.info("Using no credentials for prefix {} (for testing)", storagePrefix);
       return NoCredentials.getInstance();
+    } else if (properties.credentialsPath().isPresent()) {
+      LOG.info(
+          "Using Google credentials from path: {} for prefix {}",
+          properties.credentialsPath().get(),
+          storagePrefix);
+      try (FileInputStream credentialsStream =
+          new FileInputStream(properties.credentialsPath().get())) {
+        return GoogleCredentials.fromStream(credentialsStream)
+            .createScoped(StorageScopes.DEVSTORAGE_READ_WRITE);
+      } catch (IOException e) {
+        throw new UncheckedIOException(e);
+      }
+    } else if (properties.credentialsJson().isPresent()) {
+      LOG.info("Using embedded Google credentials from configuration for prefix {}", storagePrefix);
+      try (ByteArrayInputStream credentialsStream =
+          new ByteArrayInputStream(
+              properties.credentialsJson().get().getBytes(StandardCharsets.UTF_8))) {
+        return GoogleCredentials.fromStream(credentialsStream)
+            .createScoped(StorageScopes.DEVSTORAGE_READ_WRITE);
+      } catch (IOException e) {
+        throw new UncheckedIOException(e);
+      }
     } else if (properties.impersonateServiceAccount().isPresent()) {
       return buildImpersonatedCredentials(properties);
     } else {
