@@ -33,8 +33,9 @@ import software.amazon.awssdk.utils.Validate;
  *
  * <p>This code was copied from the original to add the create() factory method required by Iceberg.
  *
- * @link <a
- *     href="https://github.com/aws/aws-sdk-java-v2/blob/master/core/auth/src/main/java/software/amazon/awssdk/auth/credentials/StaticCredentialsProvider.java">StaticCredentialsProvider.java</a>
+ * @see <a
+ *     href="https://github.com/aws/aws-sdk-java-v2/blob/master/core/auth/src/main/java/software/amazon/awssdk/auth/credentials/StaticCredentialsProvider.java">AWS
+ *     StaticCredentialsProvider.java</a>
  */
 @SdkPublicApi
 public final class StaticCredentialsProvider implements AwsCredentialsProvider {
@@ -48,14 +49,14 @@ public final class StaticCredentialsProvider implements AwsCredentialsProvider {
     this.credentials = withProviderName(credentials);
   }
 
-  private AwsCredentials withProviderName(AwsCredentials credentials) {
-    if (credentials instanceof AwsBasicCredentials) {
-      return ((AwsBasicCredentials) credentials).copy(c -> c.providerName(PROVIDER_NAME));
+  private AwsCredentials withProviderName(AwsCredentials candidate) {
+    if (candidate instanceof AwsBasicCredentials) {
+      return ((AwsBasicCredentials) candidate).copy(c -> c.providerName(PROVIDER_NAME));
     }
-    if (credentials instanceof AwsSessionCredentials) {
-      return ((AwsSessionCredentials) credentials).copy(c -> c.providerName(PROVIDER_NAME));
+    if (candidate instanceof AwsSessionCredentials) {
+      return ((AwsSessionCredentials) candidate).copy(c -> c.providerName(PROVIDER_NAME));
     }
-    return credentials;
+    return candidate;
   }
 
   /** Create a credentials provider that always returns the provided set of credentials. */

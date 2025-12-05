@@ -98,6 +98,12 @@ jobs:
     - uses: actions/upload-artifact@v4
       if: failure()
       with:
-        name: test logs
+        name: ${{ runner.os }}-${{ matrix.jvm }}-test-logs
         path: |
           **/build/testlogs
+    - uses: actions/upload-artifact@v4
+      if: failure()
+      with:
+        name: ${{ runner.os }}-${{ matrix.jvm }}-test-reports
+        path: |
+          **/build/reports/tests/**
