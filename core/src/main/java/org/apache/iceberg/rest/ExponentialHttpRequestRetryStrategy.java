@@ -22,6 +22,7 @@ import java.io.IOException;
 import java.io.InterruptedIOException;
 import java.net.ConnectException;
 import java.net.NoRouteToHostException;
+import java.net.SocketTimeoutException;
 import java.net.UnknownHostException;
 import java.time.Instant;
 import java.util.Set;
@@ -42,6 +43,8 @@ import org.apache.hc.core5.http.protocol.HttpCoreContext;
 import org.apache.hc.core5.util.TimeValue;
 import org.apache.iceberg.relocated.com.google.common.base.Preconditions;
 import org.apache.iceberg.relocated.com.google.common.collect.ImmutableSet;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 /**
  * Defines an exponential HTTP request retry strategy and provides the same characteristics as the
@@ -79,7 +82,11 @@ import org.apache.iceberg.relocated.com.google.common.collect.ImmutableSet;
  * {@link #getRetryInterval(HttpResponse, int, HttpContext)} to achieve exponential backoff.
  */
 class ExponentialHttpRequestRetryStrategy implements HttpRequestRetryStrategy {
+  private static final Logger LOG =
+      LoggerFactory.getLogger(ExponentialHttpRequestRetryStrategy.class);
+
   private final int maxRetries;
+  private final Set<Class<? extends IOException>> retriableExceptions;
   private final Set<Class<? extends IOException>> nonRetriableExceptions;
   private final Set<Integer> retriableCodes;
   private final Set<Integer> idempotentRetriableCodes;
@@ -97,6 +104,7 @@ class ExponentialHttpRequestRetryStrategy implements HttpRequestRetryStrategy {
             HttpStatus.SC_BAD_GATEWAY,
             HttpStatus.SC_GATEWAY_TIMEOUT,
             HttpStatus.SC_REQUEST_TIMEOUT);
+    this.retriableExceptions = ImmutableSet.of(SocketTimeoutException.class);
     this.nonRetriableExceptions =
         ImmutableSet.of(
             InterruptedIOException.class,
@@ -115,7 +123,10 @@ class ExponentialHttpRequestRetryStrategy implements HttpRequestRetryStrategy {
       return false;
     }
 
-    if (nonRetriableExceptions.contains(exception.getClass())) {
+    if (retriableExceptions.contains(exception.getClass())) {
+      LOG.info("AIVEN: Socket timed out after {}/{} retries", execCount, maxRetries);
+      // Skip the non-retriable tests if it's explicitly retriable.
+    } else if (nonRetriableExceptions.contains(exception.getClass())) {
       return false;
     } else {
       for (Class<? extends IOException> rejectException : nonRetriableExceptions) {
